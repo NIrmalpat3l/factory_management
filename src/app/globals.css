@@ -42,7 +42,7 @@ body {
 
 .app-wrapper {
   width: 100%;
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background-color: var(--bg-color);
@@ -54,7 +54,6 @@ body {
   background-color: #191c21;
   color: #fff;
   padding: 8px 16px;
-  display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid #2d323b;
@@ -368,55 +367,40 @@ body {
 /* MOBILE ANDROID FRAME STYLES (Screenshot Match)           */
 /* ========================================================= */
 
-.mobile-frame-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex: 1;
-  padding: 16px;
-  overflow: hidden;
-  background-color: #121417;
+/* Responsive View Toggles */
+@media (max-width: 768px) {
+  .desktop-only { display: none !important; }
+  .mobile-only { 
+    display: flex !important; 
+    flex: 1; 
+    flex-direction: column; 
+    height: 100%; 
+    width: 100%; 
+    overflow: hidden; 
+  }
+}
+@media (min-width: 769px) {
+  .mobile-only { display: none !important; }
+  .desktop-only { display: flex !important; }
 }
 
-.mobile-phone {
-  width: 380px;
-  height: 760px;
+.mobile-layout-container {
+  width: 100%;
+  height: 100%;
   background-color: #ffffff;
-  border-radius: 36px;
-  border: 10px solid #2a2e37;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
 }
 
-/* Phone Status Bar */
-.phone-status-bar {
-  height: 32px;
-  background: #ffffff;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 16px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #333;
-  border-bottom: 1px solid #f1f5f9;
-}
 
-.status-bar-icons {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-}
 
-/* Android Header (Screenshot 2) */
+/* Android Header */
 .mobile-app-header {
-  background-color: #ffffff;
+  background-color: #191c21; /* Dark brand header instead of white */
   border-bottom: 1px solid var(--border-color);
-  padding: 10px 16px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -435,21 +419,24 @@ body {
 }
 
 .header-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
-  color: #4a4a4a;
+  color: #fdfdfd;
   letter-spacing: 0.5px;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 14px;
-  color: #555;
+  gap: 16px;
+  color: #e2e8f0;
 }
 
 .header-actions svg, .header-left svg {
   cursor: pointer;
+  padding: 10px;
+  margin: -10px;
+  box-sizing: content-box;
 }
 
 .mobile-search-input {
@@ -466,7 +453,7 @@ body {
   flex: 1;
   overflow-y: auto;
   background-color: #fdfdfd;
-  padding-bottom: 70px;
+  padding-bottom: calc(75px + env(safe-area-inset-bottom));
 }
 
 .status-group-section {
@@ -522,14 +509,16 @@ body {
   border: none;
   color: #64748b;
   cursor: pointer;
-  padding: 4px;
+  padding: 14px;
+  margin: -10px;
+  box-sizing: content-box;
 }
 
 /* Floating Action Button (+) */
 .fab-btn {
   position: absolute;
   right: 16px;
-  bottom: 65px;
+  bottom: calc(75px + env(safe-area-inset-bottom));
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -549,18 +538,18 @@ body {
   height: 26px;
 }
 
-/* Mobile Bottom Navigation Tabs (Screenshot 2) */
+/* Mobile Bottom Navigation Tabs */
 .mobile-bottom-tabs {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 54px;
+  height: calc(56px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
   background-color: #ffffff;
   border-top: 1px solid var(--border-color);
   display: flex;
-  overflow-x: auto;
-  scrollbar-width: none; /* Firefox */
+  justify-content: space-around;
   z-index: 10;
 }
 
@@ -569,23 +558,20 @@ body {
 }
 
 .tab-item {
-  flex: 0 0 auto;
-  min-width: 72px;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding: 4px 8px;
+  gap: 3px;
+  padding: 6px 2px;
   border: none;
   background: transparent;
   color: #64748b;
-  font-size: 8px;
-  font-weight: 700;
-  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 600;
   cursor: pointer;
-  letter-spacing: 0.2px;
-  white-space: nowrap;
+  letter-spacing: 0.1px;
 }
 
 .tab-item svg {

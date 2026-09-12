@@ -12,13 +12,12 @@ import { WorkerManagePanel } from '@/components/WorkerManagePanel';
 import { UserRolePanel } from '@/components/UserRolePanel';
 import { TaskConfigPanel } from '@/components/TaskConfigPanel';
 import { useAuth } from '@/contexts/AuthContext';
-import { Smartphone, Monitor, Factory, LogOut, Trash2 } from 'lucide-react';
+import { Factory, LogOut, Loader2, Trash2 } from 'lucide-react';
 
 export default function Page() {
   const { user, loading: isAuthLoading, signOut } = useAuth();
   const userRole: UserRole = user?.role || 'viewer';
 
-  const [viewMode, setViewMode] = useState<'mobile' | 'desktop'>('desktop');
   const [activeTab, setActiveTab] = useState<ActiveTab>('ALL ORDERS');
   const [orders, setOrders] = useState<Order[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -86,19 +85,7 @@ export default function Page() {
     fetchData();
   }, []);
 
-  // Responsive logic
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setViewMode('mobile');
-      } else {
-        setViewMode('desktop');
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+
 
   const handleSaveOrder = async (orderData: any) => {
     if (orderData.id) {
@@ -210,8 +197,9 @@ export default function Page() {
 
   return (
     <div className="app-wrapper">
-      {/* Top View Mode Switcher Header */}
-      <div className="mode-bar hidden md:flex">
+
+      {/* Desktop Header (Brand & Logout) */}
+      <div className="mode-bar desktop-only">
         <div className="brand">
           <Factory size={18} />
           <span>Factory Order Management</span>
@@ -223,29 +211,15 @@ export default function Page() {
         </div>
 
         <div className="view-options">
-          <button
-            className={viewMode === 'mobile' ? 'active' : ''}
-            onClick={() => setViewMode('mobile')}
-          >
-            <Smartphone size={15} />
-            Mobile View
-          </button>
-          <button
-            className={viewMode === 'desktop' ? 'active' : ''}
-            onClick={() => setViewMode('desktop')}
-          >
-            <Monitor size={15} />
-            Desktop View
-          </button>
-          <button onClick={signOut} className="btn-cancel" style={{ marginLeft: '1rem', padding: '0.25rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button onClick={signOut} className="btn-cancel" style={{ padding: '0.25rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: '#a0aec0', cursor: 'pointer' }}>
             <LogOut size={15} />
             Logout
           </button>
         </div>
       </div>
 
-      {/* Main View Renderer */}
-      {viewMode === 'mobile' ? (
+      {/* Responsive Main View Renderer */}
+      <div className="mobile-only">
         <MobileAppView
           orders={visibleOrders}
           activeTab={activeTab}
@@ -258,8 +232,12 @@ export default function Page() {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           userRole={userRole}
-        />
-      ) : (
+        >
+          {renderConfigPanel()}
+        </MobileAppView>
+      </div>
+
+      <div className="desktop-only flex-1 w-full h-full relative">
         <DesktopDashboard
           orders={visibleOrders}
           stats={derivedStats}
@@ -276,7 +254,7 @@ export default function Page() {
         >
           {renderConfigPanel()}
         </DesktopDashboard>
-      )}
+      </div>
 
       {/* Form Dialog for Order */}
       <OrderFormModal

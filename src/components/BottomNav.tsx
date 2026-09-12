@@ -12,9 +12,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onSelectTab }) 
   const tabs: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
     { id: 'ALL ORDERS', label: 'All', icon: <Factory /> },
     { id: 'RECEIVED', label: 'Received', icon: <Clock /> },
-    { id: 'IN PROGRESS', label: 'In Process', icon: <PlayCircle /> },
-    { id: 'COMPLETED', label: 'Completed', icon: <CheckCircle2 /> },
-    { id: 'CANCELLED', label: 'Cancelled', icon: <XCircle /> },
+    { id: 'IN PROGRESS', label: 'Process', icon: <PlayCircle /> },
+    { id: 'COMPLETED', label: 'Done', icon: <CheckCircle2 /> },
+    { id: 'CANCELLED', label: 'Cancel', icon: <XCircle /> },
   ];
 
   return (

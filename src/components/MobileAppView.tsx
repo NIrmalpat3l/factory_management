@@ -10,10 +10,10 @@ import {
   RotateCw,
   MoreVertical,
   Plus,
-  Wifi,
-  Battery,
-  Signal
+  Factory,
+  LogOut
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface MobileAppViewProps {
   orders: Order[];
@@ -27,6 +27,7 @@ interface MobileAppViewProps {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   userRole: UserRole;
+  children?: React.ReactNode;
 }
 
 export const MobileAppView: React.FC<MobileAppViewProps> = ({
@@ -41,9 +42,12 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
   searchQuery,
   setSearchQuery,
   userRole,
+  children,
 }) => {
   const [showSearch, setShowSearch] = useState(false);
+  const [showAdminMenu, setShowAdminMenu] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const { signOut } = useAuth();
 
   const isAdmin = userRole === 'admin';
   const isWorker = userRole === 'worker';
@@ -104,28 +108,19 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
   };
 
   return (
-    <div className="mobile-frame-container">
-      <div className="mobile-phone">
-        {/* Android Top Phone Status Bar */}
-        <div className="phone-status-bar">
-          <span>5:02</span>
-          <div className="status-bar-icons">
-            <Signal size={12} />
-            <Wifi size={12} />
-            <span>46%</span>
-            <Battery size={13} />
+    <div className="mobile-layout-container">
+      {/* App Header */}
+      <div className="mobile-app-header">
+        <div className="header-left">
+          {isAdmin ? (
+            <Menu size={22} color="#f87171" onClick={() => setShowAdminMenu(!showAdminMenu)} style={{ cursor: 'pointer' }} />
+          ) : (
+            <Factory size={22} color="#f87171" />
+          )}
+          <div className="title-group">
+            <span className="header-title">{activeTab}</span>
           </div>
         </div>
-
-        {/* Android App Top Bar */}
-        <div className="mobile-app-header">
-          <div className="header-left">
-            <Menu size={20} color="#475569" />
-            <div className="title-group">
-              <Settings size={18} color="#D9383A" />
-              <span className="header-title">{activeTab}</span>
-            </div>
-          </div>
 
           <div className="header-actions">
             <Search
@@ -133,12 +128,13 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
               onClick={() => setShowSearch(!showSearch)}
             />
             <RotateCw size={19} onClick={onRefresh} />
+            <LogOut size={19} onClick={signOut} color="#f87171" style={{ marginLeft: '4px' }} />
           </div>
         </div>
 
         {/* Expandable Search Input */}
         {showSearch && (
-          <div style={{ padding: '0 12px 8px 12px', background: '#fff' }}>
+          <div style={{ padding: '0 12px 8px 12px', background: '#191c21' }}>
             <input
               type="text"
               className="mobile-search-input"
@@ -150,9 +146,40 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
           </div>
         )}
 
+        {/* Admin Menu Dropdown */}
+        {showAdminMenu && isAdmin && (
+          <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+            {['SPRING CONFIG', 'TASK CONFIG', 'WORKERS', 'USERS'].map((tab) => (
+              <button
+                key={tab}
+                style={{ 
+                  padding: '16px', 
+                  textAlign: 'left', 
+                  background: activeTab === tab ? '#e2e8f0' : 'transparent', 
+                  border: 'none', 
+                  borderBottom: '1px solid #f1f5f9',
+                  fontWeight: 600, 
+                  color: '#334155',
+                  fontSize: '14px'
+                }}
+                onClick={() => {
+                  onSelectTab(tab as ActiveTab);
+                  setShowAdminMenu(false);
+                }}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Scrollable Order List area grouped by status */}
         <div className="mobile-content" onClick={() => setActiveMenuId(null)}>
-          {filteredOrders.length === 0 ? (
+          {['SPRING CONFIG', 'TASK CONFIG', 'WORKERS', 'USERS'].includes(activeTab) ? (
+            <div style={{ padding: '16px', paddingBottom: '80px' }}>
+              {children}
+            </div>
+          ) : filteredOrders.length === 0 ? (
             <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
               No orders found under {activeTab}
             </div>
@@ -222,9 +249,8 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
           </button>
         )}
 
-        {/* Scrollable Bottom Navigation Bar */}
+        {/* Bottom Tabs */}
         <BottomNav activeTab={activeTab} onSelectTab={onSelectTab} />
       </div>
-    </div>
   );
 };
