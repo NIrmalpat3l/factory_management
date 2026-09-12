@@ -3,7 +3,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
-export async function authenticate(prevState: any, formData: FormData) {
+export type AuthState = {
+  success: boolean;
+  error: string | null;
+};
+
+export async function authenticate(prevState: AuthState, formData: FormData): Promise<AuthState> {
   let isSuccess = false;
 
   try {
@@ -17,12 +22,12 @@ export async function authenticate(prevState: any, formData: FormData) {
 
 
     if (!email || !password) {
-      return { error: 'Email and password are required' }
+      return { success: false, error: 'Email and password are required' }
     }
 
     if (mode === 'signup') {
       if (!fullName) {
-        return { error: 'Full name is required for registration' }
+        return { success: false, error: 'Full name is required for registration' }
       }
       const { error } = await supabase.auth.signUp({
         email,
@@ -35,7 +40,7 @@ export async function authenticate(prevState: any, formData: FormData) {
       })
       
       if (error) {
-        return { error: error.message }
+        return { success: false, error: error.message }
       }
     } else {
       // login
@@ -45,7 +50,7 @@ export async function authenticate(prevState: any, formData: FormData) {
       })
 
       if (error) {
-        return { error: error.message }
+        return { success: false, error: error.message }
       }
     }
 
@@ -53,6 +58,6 @@ export async function authenticate(prevState: any, formData: FormData) {
     return { success: true, error: null }
   } catch (err: any) {
     console.error('Server Action Exception:', err)
-    return { error: 'An unexpected server error occurred: ' + (err.message || 'Unknown') }
+    return { success: false, error: 'An unexpected server error occurred: ' + (err.message || 'Unknown') }
   }
 }

@@ -1,13 +1,13 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { authenticate } from './actions'
+import { authenticate, AuthState } from './actions'
 import { useRouter } from 'next/navigation'
 import { Factory, Mail, Lock, User, Loader2, ArrowRight } from 'lucide-react'
 
-const initialState = {
-  error: null as string | null,
-  success: false as boolean,
+const initialState: AuthState = {
+  error: null,
+  success: false,
 }
 
 export default function LoginPage() {
