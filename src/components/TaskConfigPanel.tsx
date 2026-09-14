@@ -15,7 +15,6 @@ export const TaskConfigPanel: React.FC<TaskConfigPanelProps> = ({
 }) => {
   const [showAdd, setShowAdd] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
-  const [newTaskRate, setNewTaskRate] = useState(0);
   const [loading, setLoading] = useState<string | null>(null);
   const [errorModalMessage, setErrorModalMessage] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -24,9 +23,8 @@ export const TaskConfigPanel: React.FC<TaskConfigPanelProps> = ({
     if (!newTaskName.trim()) return;
     try {
       setLoading('adding');
-      await api.createTaskType(newTaskName.trim(), newTaskRate);
+      await api.createTaskType(newTaskName.trim());
       setNewTaskName('');
-      setNewTaskRate(0);
       setShowAdd(false);
       onRefresh();
     } catch (err: any) {
@@ -72,10 +70,6 @@ export const TaskConfigPanel: React.FC<TaskConfigPanelProps> = ({
             <div className="form-field" style={{ flex: 1 }}>
               <label>TASK NAME <span className="required">*</span></label>
               <input type="text" className="form-input" value={newTaskName} onChange={e => setNewTaskName(e.target.value)} placeholder="e.g. Oiling" />
-            </div>
-            <div className="form-field" style={{ width: '120px' }}>
-              <label>RATE ($) <span className="required">*</span></label>
-              <input type="number" className="form-input" value={newTaskRate} onChange={e => setNewTaskRate(parseFloat(e.target.value))} placeholder="0.00" />
             </div>
           </div>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>

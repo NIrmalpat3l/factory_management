@@ -728,15 +728,7 @@ export const api = {
     if (error) throw new Error(error.message);
   },
 
-  async updateUserRoles(userId: string, newRoles: UserRole[]): Promise<void> {
-    const role = newRoles[0] || 'viewer';
-    const { error } = await supabase
-      .from('profiles')
-      .update({ role, roles: newRoles })
-      .eq('id', userId);
-      
-    if (error) throw new Error(error.message);
-  },
+
 
   // ==========================================
   // SPRING CONFIGURATION (admin)

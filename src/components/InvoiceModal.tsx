@@ -29,7 +29,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   };
 
   // Calculate detailed lines
-  const lines = (invoice.order?.order_items || []).map(item => {
+  const lines = (order.order_items || []).map(item => {
     const springType = springTypes.find(st => st.id === item.spring_type_id);
     const qty = item.quantity_completed > 0 ? item.quantity_completed : (item.quantity_ordered || 0);
     
@@ -38,7 +38,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
     let totalTaskCost = 0;
 
     if (item.task_assignments) {
-      const groupedTasks = item.task_assignments.reduce((acc, ta) => {
+      const groupedTasks = item.task_assignments.reduce((acc: any, ta: any) => {
         if (!ta.task_type_id) return acc;
         const key = `${ta.task_type_id}_${ta.worker_id || ta.manual_worker_name || 'unassigned'}`;
         if (!acc[key]) {
@@ -140,14 +140,14 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               </tr>
             </thead>
             <tbody>
-              {lines.map((line, idx) => (
+              {lines.map((line: any, idx: number) => (
                 <React.Fragment key={idx}>
                   <tr style={{ borderBottom: line.taskBreakdown.length > 0 ? 'none' : '1px solid #e2e8f0' }}>
                     <td style={{ padding: '16px 12px', fontWeight: 600 }}>{line.springName}</td>
                     <td style={{ padding: '16px 12px', textAlign: 'right' }}>{line.qty.toLocaleString()}</td>
                     <td style={{ padding: '16px 12px', textAlign: 'right', fontWeight: 600 }}>${line.springTotal.toFixed(2)}</td>
                   </tr>
-                  {line.taskBreakdown.map((t, tIdx) => (
+                  {line.taskBreakdown.map((t: any, tIdx: number) => (
                     <tr key={tIdx} style={{ borderBottom: tIdx === line.taskBreakdown.length - 1 ? '1px solid #e2e8f0' : 'none', background: '#fdfdfd' }}>
                       <td style={{ padding: '8px 12px 8px 32px', color: '#64748b', fontSize: '13px' }}>
                         ↳ <span style={{ fontWeight: 600 }}>{t.name}</span>
