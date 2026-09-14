@@ -18,7 +18,9 @@ import {
   Users,
   Wrench,
   ListTodo,
+  FileText,
 } from 'lucide-react';
+import { AccountantDashboard } from './AccountantDashboard';
 
 interface DesktopDashboardProps {
   orders: Order[];
@@ -32,7 +34,8 @@ interface DesktopDashboardProps {
   onRefresh: () => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
-  userRole: UserRole;
+  userRole?: UserRole;
+  userRoles: UserRole[];
   children?: React.ReactNode; // For rendering config panels
 }
 
@@ -49,12 +52,17 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
   searchQuery,
   setSearchQuery,
   userRole,
+  userRoles,
   children,
 }) => {
-  const isAdmin = userRole === 'admin';
-  const isWorker = userRole === 'worker';
-  const isViewer = userRole === 'viewer';
-  const isConfigTab = activeTab === 'SPRING CONFIG' || activeTab === 'TASK CONFIG' || activeTab === 'WORKERS' || activeTab === 'USERS';
+  const isAdmin = userRoles.includes('admin');
+  const isWorker = userRoles.includes('worker');
+  const isViewer = userRoles.includes('viewer');
+  const isQA = userRoles.includes('qa');
+  const isAccountant = userRoles.includes('accountant');
+  const isConfigTab = activeTab === 'SPRING CONFIG' || activeTab === 'TASK CONFIG' || activeTab === 'WORKERS' || activeTab === 'USERS' || activeTab === 'ACCOUNTING';
+
+  const hideCompanyAndAssignedTo = isWorker && !isAdmin && activeTab !== 'QA PORTAL';
 
   const getFilteredOrders = () => {
     let filtered = [...orders];
@@ -67,6 +75,10 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
       filtered = filtered.filter(o => o.status === 'completed');
     } else if (activeTab === 'CANCELLED') {
       filtered = filtered.filter(o => o.status === 'cancelled');
+    } else if (activeTab === 'QA PORTAL') {
+      filtered = filtered.filter(o => 
+        o.status === 'in_progress' || (o.status === 'completed' && o.qc_status !== 'passed')
+      );
     }
 
     if (searchQuery.trim()) {
@@ -93,12 +105,21 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
   ];
 
   // Admin-only nav items
-  const adminNavItems: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'SPRING CONFIG', label: 'Spring Config', icon: <Settings size={18} /> },
-    { id: 'TASK CONFIG', label: 'Task Config', icon: <ListTodo size={18} /> },
-    { id: 'WORKERS', label: 'Workers', icon: <Wrench size={18} /> },
-    { id: 'USERS', label: 'User Roles', icon: <Users size={18} /> },
-  ];
+  const adminNavItems: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [];
+  if (isQA) {
+    adminNavItems.push({ id: 'QA PORTAL', label: 'Quality Check', icon: <CheckCircle2 size={18} /> });
+  }
+  if (isAccountant || isAdmin) {
+    adminNavItems.push({ id: 'ACCOUNTING', label: 'Accounting', icon: <FileText size={18} /> });
+  }
+  if (isAdmin) {
+    adminNavItems.push(
+      { id: 'SPRING CONFIG', label: 'Spring Config', icon: <Settings size={18} /> },
+      { id: 'TASK CONFIG', label: 'Task Config', icon: <ListTodo size={18} /> },
+      { id: 'WORKERS', label: 'Members', icon: <Wrench size={18} /> },
+      { id: 'USERS', label: 'User Roles', icon: <Users size={18} /> }
+    );
+  }
 
   // Worker status change restrictions
   const getWorkerStatusOptions = (currentStatus: OrderStatus): OrderStatus[] => {
@@ -131,8 +152,8 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
             </button>
           ))}
 
-          {/* Admin-only sections */}
-          {isAdmin && (
+          {/* Admin / QA / Accountant sections */}
+          {(isAdmin || isQA || isAccountant) && (
             <>
               <div style={{ borderTop: '1px solid var(--border-color)', margin: '12px 0 8px', paddingTop: '8px' }}>
                 <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', paddingLeft: '14px' }}>
@@ -158,15 +179,19 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
 
       {/* Main Content View */}
       <div className="desktop-main">
-        {/* If a config tab is selected, render the panel passed as children */}
-        {isConfigTab ? (
+        {activeTab === 'ACCOUNTING' ? (
+          <AccountantDashboard orders={orders} />
+        ) : isConfigTab ? (
           children
         ) : (
           <>
             {/* Header & New Order Action */}
             <div className="desktop-header-row">
               <div>
-                <h1>{activeTab === 'ALL ORDERS' ? 'Factory Order Management' : activeTab}</h1>
+                <h1>
+                  {activeTab === 'ALL ORDERS' ? 'Factory Order Management' 
+                    : (activeTab === 'QA PORTAL' ? 'Quality Check' : activeTab)}
+                </h1>
                 <p style={{ color: '#64748b', fontSize: '13px', marginTop: '2px' }}>
                   {isWorker ? 'View and manage your assigned orders.' : 'Manage spring orders, status updates, and manufacturing assignments.'}
                 </p>
@@ -238,20 +263,21 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
                 <thead>
                   <tr>
                     <th>Order #</th>
-                    <th>Company Name</th>
+                    {!hideCompanyAndAssignedTo && <th>Company Name</th>}
                     <th>Spring Types</th>
                     <th>Total Qty</th>
                     <th>Completed</th>
-                    <th>Assigned To</th>
+                    {!hideCompanyAndAssignedTo && <th>Assigned To</th>}
                     <th>Due Date</th>
                     <th>Status</th>
-                    {(isAdmin) && <th>Actions</th>}
+                    <th>QC Status</th>
+                    {(isAdmin && activeTab !== 'QA PORTAL') && <th>Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredOrders.length === 0 ? (
                     <tr>
-                      <td colSpan={isAdmin ? 9 : 8} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                      <td colSpan={10} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
                         No matching orders found.
                       </td>
                     </tr>
@@ -264,13 +290,13 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
                       return (
                         <tr key={order.id}>
                           <td><strong>#{order.order_number}</strong></td>
-                          <td style={{ fontWeight: 600, color: '#d97706' }}>{order.company_name}</td>
+                          {!hideCompanyAndAssignedTo && <td style={{ fontWeight: 600, color: '#d97706' }}>{order.company_name}</td>}
                           <td>{order.spring_names || '-'}</td>
                           <td><strong>{order.total_qty_ordered}</strong></td>
                           <td style={{ color: order.total_qty_completed === order.total_qty_ordered ? '#10b981' : 'inherit' }}>
                             <strong>{order.total_qty_completed}</strong>
                           </td>
-                          <td>{order.assigned_worker_name || <span style={{ color: '#94a3b8' }}>Unassigned</span>}</td>
+                          {!hideCompanyAndAssignedTo && <td>{order.assigned_worker_name || <span style={{ color: '#94a3b8' }}>Unassigned</span>}</td>}
                           <td>{order.due_date ? new Date(order.due_date).toLocaleDateString() : '-'}</td>
                           <td>
                             {isViewer ? (
@@ -290,7 +316,50 @@ export const DesktopDashboard: React.FC<DesktopDashboardProps> = ({
                               </select>
                             )}
                           </td>
-                          {isAdmin && (
+                          <td>
+                            {(isAdmin || activeTab === 'QA PORTAL') ? (
+                              <div className="pill-selector-group" style={{ width: 'fit-content', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+                                {['pending', 'passed', 'failed'].map(status => {
+                                  const currentStatus = order.qc_status || 'pending';
+                                  const isSelected = currentStatus === status;
+                                  
+                                  let selectedBg = '#94a3b8'; // pending default
+                                  if (status === 'passed') selectedBg = '#10b981';
+                                  if (status === 'failed') selectedBg = '#ef4444';
+
+                                  return (
+                                    <button
+                                      key={status}
+                                      className={`pill-btn ${isSelected ? 'selected' : ''}`}
+                                      style={{
+                                        padding: '4px 8px',
+                                        fontSize: '11px',
+                                        backgroundColor: isSelected ? selectedBg : '#ffffff',
+                                        color: isSelected ? '#ffffff' : '#64748b'
+                                      }}
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (isSelected) return;
+                                        try {
+                                          await (await import('../services/api')).api.updateOrder(order.id, { ...order, qc_status: status });
+                                          onRefresh();
+                                        } catch (err: any) {
+                                          alert('Failed to update QC status: ' + err.message);
+                                        }
+                                      }}
+                                    >
+                                      {status.toUpperCase()}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <span className={`status-pill ${order.qc_status?.toUpperCase() || 'PENDING'}`}>
+                                {order.qc_status?.toUpperCase() || 'PENDING'}
+                              </span>
+                            )}
+                          </td>
+                          {(isAdmin && activeTab !== 'QA PORTAL') && (
                             <td>
                               <div style={{ display: 'flex', gap: '8px' }}>
                                 <button className="add-plus-btn" style={{ width: '32px', height: '32px' }} onClick={() => onEditOrder(order)} title="Edit Order">

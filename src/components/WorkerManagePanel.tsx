@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Profile } from '../types/order';
 import { api } from '../services/api';
-import { Edit, Save, X, UserPlus, UserX, Check } from 'lucide-react';
+import { Edit, X, UserPlus, UserX, Check } from 'lucide-react';
 
 interface WorkerManagePanelProps {
   profiles: Profile[];
@@ -16,9 +16,9 @@ export const WorkerManagePanel: React.FC<WorkerManagePanelProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<string | null>(null);
 
-  const workers = profiles.filter(p => p.role === 'worker');
+  const members = profiles;
 
   const startEdit = (p: Profile) => {
     setEditingId(p.id);
@@ -28,14 +28,26 @@ export const WorkerManagePanel: React.FC<WorkerManagePanelProps> = ({
 
   const handleSave = async (id: string) => {
     try {
-      setLoading(true);
+      setLoading(id);
       await api.updateProfile(id, { full_name: editName, phone: editPhone || null });
       setEditingId(null);
       onRefresh();
     } catch (err: any) {
       alert(err.message || 'Failed to update');
     } finally {
-      setLoading(false);
+      setLoading(null);
+    }
+  };
+
+  const handleSalaryChange = async (userId: string, newSalary: number) => {
+    try {
+      setLoading(userId);
+      await (await import('../services/api')).api.updateUserProfile(userId, { salary: newSalary });
+      onRefresh();
+    } catch (err: any) {
+      alert('Failed to update salary: ' + err.message);
+    } finally {
+      setLoading(null);
     }
   };
 
@@ -49,14 +61,12 @@ export const WorkerManagePanel: React.FC<WorkerManagePanelProps> = ({
   };
 
   return (
-    <div>
-      <div className="desktop-header-row">
-        <div>
-          <h1>Worker Management</h1>
-          <p style={{ color: '#64748b', fontSize: '13px', marginTop: '2px' }}>
-            Edit worker details and manage active status. To add new workers, create them as users first via User Management.
-          </p>
-        </div>
+    <div style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+      <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 600 }}>Members</h2>
+        <p style={{ color: '#64748b', fontSize: '13px', marginTop: '4px' }}>
+          Edit member details, salaries, and manage active status.
+        </p>
       </div>
 
       <div className="table-container">
@@ -66,18 +76,19 @@ export const WorkerManagePanel: React.FC<WorkerManagePanelProps> = ({
               <th>Name</th>
               <th>Phone</th>
               <th>Status</th>
+              <th>Salary ($)</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {workers.length === 0 ? (
+            {members.length === 0 ? (
               <tr>
-                <td colSpan={4} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
-                  No workers found. Add users with the &quot;worker&quot; role from User Management.
+                <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                  No members found.
                 </td>
               </tr>
             ) : (
-              workers.map(w => (
+              members.map(w => (
                 <tr key={w.id}>
                   <td>
                     {editingId === w.id ? (
@@ -104,11 +115,25 @@ export const WorkerManagePanel: React.FC<WorkerManagePanelProps> = ({
                     </span>
                   </td>
                   <td>
+                    <input
+                      type="number"
+                      defaultValue={w.salary || 0}
+                      style={{ width: '80px', padding: '4px', border: '1px solid #e2e8f0', borderRadius: '4px' }}
+                      onBlur={(e) => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val) && val !== w.salary) {
+                          handleSalaryChange(w.id, val);
+                        }
+                      }}
+                      disabled={loading === w.id}
+                    />
+                  </td>
+                  <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {editingId === w.id ? (
                         <>
                           <button className="add-plus-btn" style={{ width: '32px', height: '32px', color: '#059669' }}
-                            onClick={() => handleSave(w.id)} disabled={loading} title="Save">
+                            onClick={() => handleSave(w.id)} disabled={loading === w.id} title="Save">
                             <Check size={14} />
                           </button>
                           <button className="add-plus-btn" style={{ width: '32px', height: '32px' }}

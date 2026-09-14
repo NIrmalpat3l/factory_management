@@ -14,6 +14,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { AccountantDashboard } from './AccountantDashboard';
 
 interface MobileAppViewProps {
   orders: Order[];
@@ -26,7 +27,8 @@ interface MobileAppViewProps {
   onRefresh: () => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
-  userRole: UserRole;
+  userRole?: UserRole;
+  userRoles?: UserRole[];
   children?: React.ReactNode;
 }
 
@@ -42,6 +44,7 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
   searchQuery,
   setSearchQuery,
   userRole,
+  userRoles = [],
   children,
 }) => {
   const [showSearch, setShowSearch] = useState(false);
@@ -49,9 +52,12 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const { signOut } = useAuth();
 
-  const isAdmin = userRole === 'admin';
-  const isWorker = userRole === 'worker';
-  const isViewer = userRole === 'viewer';
+  const isAdmin = userRoles.includes('admin');
+  const isWorker = userRoles.includes('worker');
+  const isViewer = userRoles.includes('viewer');
+  const isQA = userRoles.includes('qa');
+
+  const hideCompanyAndAssignedTo = isWorker && !isAdmin && activeTab !== 'QA PORTAL';
 
   const groupedStatuses: OrderStatus[] = ['received', 'in_progress', 'completed', 'cancelled'];
 
@@ -66,6 +72,10 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
       filtered = filtered.filter(o => o.status === 'completed');
     } else if (activeTab === 'CANCELLED') {
       filtered = filtered.filter(o => o.status === 'cancelled');
+    } else if (activeTab === 'QA PORTAL') {
+      filtered = filtered.filter(o => 
+        o.status === 'in_progress' || (o.status === 'completed' && o.qc_status !== 'passed')
+      );
     }
 
     if (searchQuery.trim()) {
@@ -112,13 +122,16 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
       {/* App Header */}
       <div className="mobile-app-header">
         <div className="header-left">
-          {isAdmin ? (
+          {(isAdmin || isQA || userRoles.includes('accountant')) ? (
             <Menu size={22} color="#f87171" onClick={() => setShowAdminMenu(!showAdminMenu)} style={{ cursor: 'pointer' }} />
           ) : (
             <Factory size={22} color="#f87171" />
           )}
           <div className="title-group">
-            <span className="header-title">{activeTab}</span>
+            <span className="header-title">
+              {activeTab === 'QA PORTAL' ? 'QUALITY CHECK' 
+                : (activeTab === 'WORKERS' ? 'MEMBERS' : activeTab)}
+            </span>
           </div>
         </div>
 
@@ -147,9 +160,13 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
         )}
 
         {/* Admin Menu Dropdown */}
-        {showAdminMenu && isAdmin && (
+        {showAdminMenu && (isAdmin || isQA || userRoles.includes('accountant')) && (
           <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
-            {['SPRING CONFIG', 'TASK CONFIG', 'WORKERS', 'USERS'].map((tab) => (
+            {[
+              ...(isQA ? ['QA PORTAL'] : []),
+              ...(isAdmin || userRoles.includes('accountant') ? ['ACCOUNTING'] : []),
+              ...(isAdmin ? ['SPRING CONFIG', 'TASK CONFIG', 'WORKERS', 'USERS'] : [])
+            ].map((tab) => (
               <button
                 key={tab}
                 style={{ 
@@ -167,7 +184,7 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
                   setShowAdminMenu(false);
                 }}
               >
-                {tab}
+                {tab === 'QA PORTAL' ? 'Quality Check' : (tab === 'WORKERS' ? 'Members' : tab)}
               </button>
             ))}
           </div>
@@ -175,7 +192,11 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
 
         {/* Scrollable Order List area grouped by status */}
         <div className="mobile-content" onClick={() => setActiveMenuId(null)}>
-          {['SPRING CONFIG', 'TASK CONFIG', 'WORKERS', 'USERS'].includes(activeTab) ? (
+          {activeTab === 'ACCOUNTING' ? (
+            <div style={{ padding: '0 16px', paddingBottom: '80px', height: '100%', overflowY: 'auto' }}>
+              <AccountantDashboard orders={orders} />
+            </div>
+          ) : ['SPRING CONFIG', 'TASK CONFIG', 'WORKERS', 'USERS'].includes(activeTab) ? (
             <div style={{ padding: '16px', paddingBottom: '80px' }}>
               {children}
             </div>
@@ -197,15 +218,63 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
                     const menuOptions = getMenuOptions(order);
                     return (
                       <div key={order.id} className="order-item-card" style={{ position: 'relative' }}>
-                        <div className="order-main-info" onClick={() => isAdmin ? onEditOrder(order) : undefined}>
-                          <div className="company-name">{order.company_name}</div>
+                        <div className="order-main-info" onClick={isAdmin ? () => onEditOrder(order) : undefined} style={isAdmin ? { cursor: 'pointer' } : undefined}>
+                          {!hideCompanyAndAssignedTo && <div className="company-name">{order.company_name}</div>}
                           <div className="order-desc">{order.spring_names || 'No items'}</div>
                           <div className="order-meta">
                             <span>#{order.order_number}</span>
                             <span>• Qty: {order.total_qty_ordered}</span>
                             <span>• Done: {order.total_qty_completed}</span>
-                            {order.assigned_worker_name && (
+                            {!hideCompanyAndAssignedTo && order.assigned_worker_name && (
                               <span>• 👷 {order.assigned_worker_name}</span>
+                            )}
+                          </div>
+                          
+                          <div style={{ marginTop: '12px' }}>
+                            {(isAdmin || activeTab === 'QA PORTAL') ? (
+                              <div className="pill-selector-group" style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '6px' }} onClick={(e) => e.stopPropagation()}>
+                                {['pending', 'passed', 'failed'].map(status => {
+                                  const currentStatus = order.qc_status || 'pending';
+                                  const isSelected = currentStatus === status;
+                                  
+                                  let selectedBg = '#94a3b8';
+                                  if (status === 'passed') selectedBg = '#10b981';
+                                  if (status === 'failed') selectedBg = '#ef4444';
+
+                                  return (
+                                    <button
+                                      key={status}
+                                      className={`pill-btn ${isSelected ? 'selected' : ''}`}
+                                      style={{
+                                        padding: '6px 4px',
+                                        fontSize: '11px',
+                                        backgroundColor: isSelected ? selectedBg : '#ffffff',
+                                        color: isSelected ? '#ffffff' : '#64748b',
+                                        flex: 1
+                                      }}
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (isSelected) return;
+                                        try {
+                                          await (await import('../services/api')).api.updateOrder(order.id, { ...order, qc_status: status });
+                                          onRefresh();
+                                        } catch (err: any) {
+                                          alert('Failed to update QC status: ' + err.message);
+                                        }
+                                      }}
+                                    >
+                                      {status.toUpperCase()}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div>
+                                <span style={{ fontSize: '12px', color: '#64748b', marginRight: '6px' }}>QC:</span>
+                                <span className={`status-pill ${order.qc_status?.toUpperCase() || 'PENDING'}`}>
+                                  {order.qc_status?.toUpperCase() || 'PENDING'}
+                                </span>
+                              </div>
                             )}
                           </div>
                         </div>

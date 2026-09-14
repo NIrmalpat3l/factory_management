@@ -17,6 +17,7 @@ import { Factory, LogOut, Loader2, Trash2 } from 'lucide-react';
 export default function Page() {
   const { user, loading: isAuthLoading, signOut } = useAuth();
   const userRole: UserRole = user?.role || 'viewer';
+  const userRoles: UserRole[] = user?.roles || [userRole];
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('ALL ORDERS');
   const [orders, setOrders] = useState<Order[]>([]);
@@ -82,8 +83,8 @@ export default function Page() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (user) fetchData();
+  }, [user]);
 
 
 
@@ -168,13 +169,32 @@ export default function Page() {
     }
   };
 
-  const visibleOrders = userRole === 'worker' && user 
-    ? orders.filter(order => 
-        order.order_items?.some(item => 
-          item.task_assignments?.some(ta => ta.worker_id === user.id)
-        )
-      )
-    : orders;
+  const isAdmin = userRoles.includes('admin');
+  const isWorker = userRoles.includes('worker');
+  const isQA = userRoles.includes('qa');
+  const isViewer = userRoles.includes('viewer');
+  const isAccountant = userRoles.includes('accountant');
+
+  const visibleOrders = orders.filter(order => {
+    // Admins always see everything
+    if (isAdmin) return true;
+    
+    // Specialized tabs show everything if the user has the right role
+    if (activeTab === 'ACCOUNTING' && isAccountant) return true;
+    if (activeTab === 'QA PORTAL' && isQA) return true;
+    
+    // In common panels, if they are a worker, they only see their assigned orders
+    if (isWorker && user) {
+      return order.order_items?.some(item => 
+        item.task_assignments?.some(ta => ta.worker_id === user.id)
+      );
+    }
+    
+    // If they are not a worker, but have these roles, they can see everything in common panels
+    if (isAccountant || isViewer || isQA) return true;
+    
+    return false;
+  });
 
   const derivedStats: OrderStats = {
     total: visibleOrders.length,
@@ -205,7 +225,7 @@ export default function Page() {
           <span>Factory Order Management</span>
           {user && (
             <span style={{ marginLeft: '8px', fontSize: '11px', color: '#94a3b8', fontWeight: 400 }}>
-              ({user.full_name} • {userRole.toUpperCase()})
+              ({user.full_name} • {userRoles.map(r => r === 'worker' ? 'PH' : r.toUpperCase()).join(', ')})
             </span>
           )}
         </div>
@@ -231,7 +251,8 @@ export default function Page() {
           onRefresh={fetchData}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          userRole={userRole}
+          userRole={userRole} // keeping for backwards compatibility in some modals if needed
+          userRoles={userRoles}
         >
           {renderConfigPanel()}
         </MobileAppView>
@@ -251,6 +272,7 @@ export default function Page() {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           userRole={userRole}
+          userRoles={userRoles}
         >
           {renderConfigPanel()}
         </DesktopDashboard>

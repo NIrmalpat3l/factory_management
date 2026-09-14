@@ -347,10 +347,16 @@ body {
   text-transform: uppercase;
 }
 
-.status-pill.NOT.STARTED { background: #fee2e2; color: #dc2626; }
-.status-pill.IN.PROCESS { background: #fef3c7; color: #d97706; }
+/* Order statuses */
+.status-pill.RECEIVED { background: #fee2e2; color: #dc2626; }
+.status-pill.IN_PROGRESS { background: #fef3c7; color: #d97706; }
 .status-pill.COMPLETED { background: #d1fae5; color: #059669; }
-.status-pill.READY { background: #dbeafe; color: #2563eb; }
+.status-pill.CANCELLED { background: #f1f5f9; color: #64748b; }
+
+/* QC statuses */
+.status-pill.PENDING { background: #f1f5f9; color: #64748b; }
+.status-pill.PASSED { background: #d1fae5; color: #059669; }
+.status-pill.FAILED { background: #fee2e2; color: #dc2626; }
 
 /* Priority Badges */
 .priority-pill {
@@ -894,4 +900,30 @@ body {
   background-color: #fca5a5;
   cursor: not-allowed;
   transform: none;
+}
+/* Hide spin buttons on number inputs */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Fix #9: Hide native select dropdown arrow for status pills */
+select.status-pill {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 10px;
+  cursor: pointer;
+}
+
+/* Fix #8: Mobile-friendly accountant stats */
+@media (max-width: 520px) {
+  .accountant-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
 }

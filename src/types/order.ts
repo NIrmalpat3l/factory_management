@@ -1,14 +1,25 @@
 export type OrderStatus = 'received' | 'in_progress' | 'completed' | 'cancelled';
 export type TaskStatus = 'unassigned' | 'assigned' | 'in_progress' | 'done';
-export type UserRole = 'admin' | 'worker' | 'viewer';
+export type UserRole = 'admin' | 'worker' | 'viewer' | 'qa' | 'accountant';
 
 export interface Profile {
   id: string;
   full_name: string;
-  role: UserRole;
+  role: UserRole; // Legacy
+  roles?: UserRole[]; // New roles array
   phone: string | null;
   is_active: boolean;
+  salary?: number;
   created_at?: string;
+}
+
+export interface Invoice {
+  id: string;
+  order_id: string;
+  amount: number;
+  status: 'unpaid' | 'paid';
+  generated_at: string;
+  paid_at: string | null;
 }
 
 export interface Company {
@@ -22,6 +33,7 @@ export interface Order {
   order_number: string;
   company_id: string;
   status: OrderStatus;
+  qc_status?: 'pending' | 'passed' | 'failed';
   created_at: string;
   due_date: string | null;
 
@@ -73,11 +85,13 @@ export interface TaskAssignment {
   spring_type_name?: string;
   worker_name?: string;
   task_type_name?: string;
+  profiles?: { full_name?: string; salary?: number };
 }
 
 export interface TaskType {
   id: string;
   name: string;
+  rate?: number;
   created_at?: string;
 }
 
@@ -127,7 +141,9 @@ export type ActiveTab =
   | 'IN PROGRESS'
   | 'COMPLETED'
   | 'CANCELLED'
+  | 'QA PORTAL'
   | 'SPRING CONFIG'
   | 'TASK CONFIG'
   | 'WORKERS'
-  | 'USERS';
+  | 'USERS'
+  | 'ACCOUNTING';

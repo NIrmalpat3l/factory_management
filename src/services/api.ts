@@ -1,4 +1,4 @@
-import { Order, Company, OrderStats, Profile, SpringCategory, SpringParameter, SpringType, UserRole } from '../types/order';
+import { Order, Company, OrderStats, Profile, SpringCategory, SpringParameter, SpringType, UserRole, OrderStatus, TaskStatus, Invoice } from '../types/order';
 import { supabase } from '../lib/supabase';
 
 export const api = {
@@ -17,7 +17,7 @@ export const api = {
         spring_type_id,
         spring_types(name),
         order_item_parameters(parameter_id, value),
-        task_assignments(id, worker_id, task_type_id, status, profiles:worker_id(full_name), task_types:task_type_id(name))
+        task_assignments(id, worker_id, task_type_id, status, quantity_assigned, quantity_produced, profiles:worker_id(full_name, salary), task_types:task_type_id(name))
       )
     `);
 
@@ -371,11 +371,14 @@ export const api = {
       .from('profiles')
       .select('*')
       .eq('is_active', true)
-      .in('role', ['worker', 'admin'])
       .order('full_name', { ascending: true });
 
     if (error) throw new Error(error.message);
-    return data || [];
+    // Filter in JS since filtering arrays in older supabase clients is tricky without contains
+    return (data || []).filter((p: any) => {
+      const r = p.roles || [p.role];
+      return r.includes('worker') || r.includes('admin');
+    });
   },
 
   async getAllProfiles(): Promise<Profile[]> {
@@ -400,10 +403,26 @@ export const api = {
     return data;
   },
 
-  async updateUserRole(userId: string, role: UserRole): Promise<void> {
+  async updateUserProfile(userId: string, updates: { full_name?: string; phone?: string; is_active?: boolean; salary?: number }): Promise<void> {
     const { error } = await supabase
       .from('profiles')
-      .update({ role })
+      .update(updates)
+      .eq('id', userId);
+
+    if (error) throw new Error(error.message);
+  },
+
+  async updateUserRoles(userId: string, roles: UserRole[]): Promise<void> {
+    // Legacy 'role' column is an enum that may not have 'qa'.
+    // If 'qa' is the first role, use 'worker' or 'viewer' as a fallback to avoid enum error.
+    let legacyRole = roles[0];
+    if (legacyRole === 'qa') {
+      legacyRole = (roles.length > 1 && roles[1] !== 'qa') ? roles[1] : 'worker';
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role: legacyRole, roles })
       .eq('id', userId);
 
     if (error) throw new Error(error.message);
@@ -608,10 +627,22 @@ export const api = {
     return data || [];
   },
 
-  async createTaskType(name: string): Promise<any> {
+  async createTaskType(name: string, rate: number = 0): Promise<any> {
     const { data, error } = await supabase
       .from('task_types')
-      .insert([{ name }])
+      .insert([{ name, rate }])
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
+  },
+
+  async updateTaskType(id: string, updates: any): Promise<any> {
+    const { data, error } = await supabase
+      .from('task_types')
+      .update(updates)
+      .eq('id', id)
       .select()
       .single();
 
@@ -624,6 +655,43 @@ export const api = {
       .from('task_types')
       .delete()
       .eq('id', id);
+
+    if (error) throw new Error(error.message);
+  },
+
+  // ==========================================
+  // INVOICES
+  // ==========================================
+
+  async getInvoices(): Promise<Invoice[]> {
+    const { data, error } = await supabase
+      .from('invoices')
+      .select('*')
+      .order('generated_at', { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return data || [];
+  },
+
+  async generateInvoice(orderId: string, amount: number): Promise<Invoice> {
+    const { data, error } = await supabase
+      .from('invoices')
+      .insert([{ order_id: orderId, amount }])
+      .select('*')
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
+  },
+
+  async updateInvoiceStatus(invoiceId: string, status: 'unpaid' | 'paid'): Promise<void> {
+    const { error } = await supabase
+      .from('invoices')
+      .update({ 
+        status, 
+        paid_at: status === 'paid' ? new Date().toISOString() : null 
+      })
+      .eq('id', invoiceId);
 
     if (error) throw new Error(error.message);
   },

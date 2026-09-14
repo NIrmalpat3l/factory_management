@@ -15,22 +15,24 @@ export const TaskConfigPanel: React.FC<TaskConfigPanelProps> = ({
 }) => {
   const [showAdd, setShowAdd] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [newTaskRate, setNewTaskRate] = useState(0);
+  const [loading, setLoading] = useState<string | null>(null);
   const [errorModalMessage, setErrorModalMessage] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const handleAdd = async () => {
     if (!newTaskName.trim()) return;
     try {
-      setLoading(true);
-      await api.createTaskType(newTaskName.trim());
+      setLoading('adding');
+      await api.createTaskType(newTaskName.trim(), newTaskRate);
       setNewTaskName('');
+      setNewTaskRate(0);
       setShowAdd(false);
       onRefresh();
     } catch (err: any) {
       alert(err.message || 'Failed to add task type');
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
   };
 
@@ -66,13 +68,19 @@ export const TaskConfigPanel: React.FC<TaskConfigPanelProps> = ({
 
       {showAdd && (
         <div style={{ background: '#fff', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '24px', maxWidth: '500px', marginBottom: '24px' }}>
-          <div className="form-field" style={{ marginBottom: '16px' }}>
-            <label>TASK NAME <span className="required">*</span></label>
-            <input type="text" className="form-input" value={newTaskName} onChange={e => setNewTaskName(e.target.value)} placeholder="e.g. Oiling" />
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+            <div className="form-field" style={{ flex: 1 }}>
+              <label>TASK NAME <span className="required">*</span></label>
+              <input type="text" className="form-input" value={newTaskName} onChange={e => setNewTaskName(e.target.value)} placeholder="e.g. Oiling" />
+            </div>
+            <div className="form-field" style={{ width: '120px' }}>
+              <label>RATE ($) <span className="required">*</span></label>
+              <input type="number" className="form-input" value={newTaskRate} onChange={e => setNewTaskRate(parseFloat(e.target.value))} placeholder="0.00" />
+            </div>
           </div>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <button type="button" className="btn-cancel" onClick={() => setShowAdd(false)}>Cancel</button>
-            <button type="button" className="btn-primary" onClick={handleAdd} disabled={loading}>
+            <button type="button" className="btn-primary" onClick={handleAdd} disabled={loading !== null}>
               Save Task
             </button>
           </div>
@@ -84,13 +92,14 @@ export const TaskConfigPanel: React.FC<TaskConfigPanelProps> = ({
           <thead>
             <tr>
               <th>Task Name</th>
+              <th>Rate ($)</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {taskTypes.length === 0 ? (
               <tr>
-                <td colSpan={2} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                <td colSpan={3} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
                   No task types configured yet.
                 </td>
               </tr>
@@ -99,8 +108,33 @@ export const TaskConfigPanel: React.FC<TaskConfigPanelProps> = ({
                 <tr key={t.id}>
                   <td><strong>{t.name}</strong></td>
                   <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ color: '#64748b' }}>$</span>
+                      <input
+                        type="number"
+                        defaultValue={t.rate || 0}
+                        style={{ width: '80px', padding: '4px', border: '1px solid #e2e8f0', borderRadius: '4px' }}
+                        onBlur={async (e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val) && val !== t.rate) {
+                            try {
+                              setLoading(t.id);
+                              await api.updateTaskType(t.id, { rate: val });
+                              onRefresh();
+                            } catch(err: any) {
+                              alert('Failed to update task rate: ' + err.message);
+                            } finally {
+                              setLoading(null);
+                            }
+                          }
+                        }}
+                        disabled={loading === t.id}
+                      />
+                    </div>
+                  </td>
+                  <td>
                     <button className="add-plus-btn" style={{ width: '32px', height: '32px', color: '#dc2626' }}
-                      onClick={() => setDeleteConfirmId(t.id)} title="Delete">
+                      onClick={() => setDeleteConfirmId(t.id)} disabled={loading !== null} title="Delete">
                       <Trash2 size={14} />
                     </button>
                   </td>

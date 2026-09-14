@@ -7,7 +7,8 @@ import { Session } from '@supabase/supabase-js';
 export interface UserProfile {
   id: string;
   full_name: string;
-  role: 'admin' | 'worker' | 'viewer';
+  role: 'admin' | 'worker' | 'viewer' | 'qa'; // Legacy
+  roles?: ('admin' | 'worker' | 'viewer' | 'qa')[]; // New
   phone: string | null;
   is_active: boolean;
   created_at: string;
@@ -65,6 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: activeSession.user.id,
             full_name: email?.split('@')[0] || 'New User',
             role: 'worker', 
+            roles: ['worker'],
             is_active: true
           }])
           .select()
