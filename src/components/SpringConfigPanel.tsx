@@ -30,7 +30,6 @@ export const SpringConfigPanel: React.FC<SpringConfigModalProps> = ({
   // Form state
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [payRate, setPayRate] = useState(0);
   const [selectedParams, setSelectedParams] = useState<{ parameter_id: string; value: number }[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorModalMessage, setErrorModalMessage] = useState<string | null>(null);
@@ -40,7 +39,6 @@ export const SpringConfigPanel: React.FC<SpringConfigModalProps> = ({
     if (editingType) {
       setName(editingType.name);
       setCategoryId(editingType.category_id);
-      setPayRate(editingType.pay_rate);
       setSelectedParams(
         (editingType.parameters || []).map(p => ({
           parameter_id: p.parameter_id,
@@ -50,7 +48,6 @@ export const SpringConfigPanel: React.FC<SpringConfigModalProps> = ({
     } else if (isAdding) {
       setName('');
       setCategoryId(categories.length > 0 ? categories[0].id : '');
-      setPayRate(0);
       setSelectedParams([]);
     }
   }, [editingType, isAdding, categories]);
@@ -78,7 +75,7 @@ export const SpringConfigPanel: React.FC<SpringConfigModalProps> = ({
     }
     try {
       setLoading(true);
-      const payload = { name, category_id: categoryId, pay_rate: payRate, parameters: selectedParams };
+      const payload = { name, category_id: categoryId, parameters: selectedParams };
       if (editingType) {
         await api.updateSpringType(editingType.id, payload);
       } else {
@@ -182,11 +179,6 @@ export const SpringConfigPanel: React.FC<SpringConfigModalProps> = ({
           </div>
 
           <div className="form-field" style={{ marginBottom: '16px' }}>
-            <label>PAY RATE (₹ per unit)</label>
-            <input type="number" step="0.01" className="form-input" value={payRate} onChange={e => setPayRate(parseFloat(e.target.value) || 0)} />
-          </div>
-
-          <div className="form-field" style={{ marginBottom: '16px' }}>
             <label style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span>PARAMETERS (select which dimensions this spring measures)</span>
               <button type="button" className="add-plus-btn" style={{ width: '28px', height: '28px' }}
@@ -269,17 +261,16 @@ export const SpringConfigPanel: React.FC<SpringConfigModalProps> = ({
         <table className="data-table">
           <thead>
             <tr>
-              <th>Spring Name</th>
+              <th>Name</th>
               <th>Category</th>
-              <th>Parameters</th>
-              <th>Pay Rate (₹)</th>
+              <th>Required Parameters</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {springTypes.length === 0 ? (
               <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                <td colSpan={4} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
                   No spring types configured yet. Click "Add Spring Type" to get started.
                 </td>
               </tr>
@@ -298,7 +289,6 @@ export const SpringConfigPanel: React.FC<SpringConfigModalProps> = ({
                       {(!st.parameters || st.parameters.length === 0) && <span style={{ color: '#94a3b8', fontSize: '12px' }}>None</span>}
                     </div>
                   </td>
-                  <td><strong>₹{st.pay_rate}</strong></td>
                   <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button className="add-plus-btn" style={{ width: '32px', height: '32px' }}

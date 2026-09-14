@@ -16,6 +16,7 @@ export const WorkerManagePanel: React.FC<WorkerManagePanelProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
+  const [newWorkerName, setNewWorkerName] = useState('');
   const [loading, setLoading] = useState<string | null>(null);
 
   const members = profiles;
@@ -60,13 +61,47 @@ export const WorkerManagePanel: React.FC<WorkerManagePanelProps> = ({
     }
   };
 
+  const handleAddWorker = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newWorkerName.trim()) return;
+    try {
+      setLoading('add_worker');
+      await api.createProfile({
+        full_name: newWorkerName,
+        role: 'worker',
+        is_active: true
+      });
+      setNewWorkerName('');
+      onRefresh();
+    } catch (err: any) {
+      alert('Failed to add worker: ' + err.message);
+    } finally {
+      setLoading(null);
+    }
+  };
+
   return (
-    <div style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-      <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 600 }}>Members</h2>
-        <p style={{ color: '#64748b', fontSize: '13px', marginTop: '4px' }}>
-          Edit member details, salaries, and manage active status.
-        </p>
+    <div style={{ background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+      <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h2 style={{ fontSize: '18px', fontWeight: 600 }}>Members</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>
+            Manage workers, salaries, and add new manual members.
+          </p>
+        </div>
+        <form onSubmit={handleAddWorker} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <input
+            type="text"
+            className="form-input"
+            style={{ width: '200px', fontSize: '13px', padding: '8px 12px', background: 'rgba(0,0,0,0.1)' }}
+            placeholder="New worker name..."
+            value={newWorkerName}
+            onChange={(e) => setNewWorkerName(e.target.value)}
+          />
+          <button type="submit" className="btn-primary" style={{ padding: '8px 12px' }} disabled={loading === 'add_worker'}>
+            <UserPlus size={16} /> Add
+          </button>
+        </form>
       </div>
 
       <div className="table-container">

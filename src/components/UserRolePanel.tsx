@@ -95,7 +95,7 @@ export const UserRolePanel: React.FC<UserRolePanelProps> = ({
                     <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                       {(p.roles || [p.role]).map(r => (
                         <span key={r} style={{ ...getRoleBadgeStyle(r), padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>
-                          {r === 'worker' ? 'PH' : r.toUpperCase()}
+                          {r.toUpperCase()}
                         </span>
                       ))}
                     </div>
@@ -105,7 +105,7 @@ export const UserRolePanel: React.FC<UserRolePanelProps> = ({
                       <span style={{ color: '#94a3b8', fontSize: '12px' }}>Cannot change own role</span>
                     ) : (
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                        {['admin', 'worker', 'viewer', 'qa', 'accountant'].map(r => {
+                        {['admin', 'ph', 'viewer', 'qa', 'accountant'].map(r => {
                           const userRoles = p.roles || [p.role];
                           const hasRole = userRoles.includes(r as UserRole);
                           
@@ -147,7 +147,7 @@ export const UserRolePanel: React.FC<UserRolePanelProps> = ({
                               }}
                             >
                               {hasRole && <span style={{ marginRight: '4px' }}>✓</span>}
-                              {r === 'worker' ? 'PH' : r.toUpperCase()}
+                              {r.toUpperCase()}
                             </div>
                           );
                         })}

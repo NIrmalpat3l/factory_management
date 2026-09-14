@@ -133,7 +133,7 @@ CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.
 
 -- Companies
 CREATE POLICY "Admins manage companies" ON companies FOR ALL USING (get_user_role() = 'admin');
-CREATE POLICY "Viewers and Workers read companies" ON companies FOR SELECT USING (true);
+CREATE POLICY "Others read companies" ON companies FOR SELECT USING (get_user_role()::text IN ('viewer', 'worker', 'qa', 'ph'));
 
 -- Spring Definitions
 CREATE POLICY "Admins manage spring categories" ON spring_categories FOR ALL USING (get_user_role() = 'admin');
@@ -153,11 +153,11 @@ CREATE POLICY "Anyone can view spring type values" ON spring_type_parameter_valu
 
 -- Orders
 CREATE POLICY "Admins manage orders" ON orders FOR ALL USING (get_user_role() = 'admin');
-CREATE POLICY "Viewers and Workers can read orders" ON orders FOR SELECT USING (get_user_role() IN ('viewer', 'worker'));
+CREATE POLICY "Others can read orders" ON orders FOR SELECT USING (get_user_role()::text IN ('viewer', 'worker', 'qa', 'ph'));
 
 -- Order Items
 CREATE POLICY "Admins manage order items" ON order_items FOR ALL USING (get_user_role() = 'admin');
-CREATE POLICY "Viewers and Workers can read order items" ON order_items FOR SELECT USING (get_user_role() IN ('viewer', 'worker'));
+CREATE POLICY "Others can read order items" ON order_items FOR SELECT USING (get_user_role()::text IN ('viewer', 'worker', 'qa', 'ph'));
 
 -- Task Assignments
 CREATE POLICY "Admins manage task assignments" ON task_assignments FOR ALL USING (get_user_role() = 'admin');

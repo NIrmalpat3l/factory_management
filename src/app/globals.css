@@ -1,4 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
+
 :root {
   --primary: #D9383A;
   --primary-hover: #b82a2c;
@@ -10,7 +12,7 @@
   --border-color: #e2e8f0;
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.12);
-  --font-family: 'Roboto', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 * {
@@ -105,6 +107,8 @@ body {
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
+  min-width: 0;
 }
 
 /* Desktop Sidebar */
@@ -186,6 +190,8 @@ body {
   overflow-y: auto;
   padding: 24px 32px;
   background: #f8fafc;
+  min-height: 0;
+  min-width: 0;
 }
 
 .desktop-header-row {
@@ -398,6 +404,8 @@ body {
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  min-height: 0;
+  min-width: 0;
 }
 
 
@@ -460,6 +468,8 @@ body {
   overflow-y: auto;
   background-color: #fdfdfd;
   padding-bottom: calc(75px + env(safe-area-inset-bottom));
+  min-height: 0;
+  min-width: 0;
 }
 
 .status-group-section {

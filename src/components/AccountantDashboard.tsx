@@ -155,20 +155,8 @@ export const AccountantDashboard: React.FC<AccountantDashboardProps> = ({ orders
                         style={{ padding: '6px 12px', background: '#D9383A', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '12px' }}
                         onClick={() => {
                           // Automatically calculate the amount
-                          let calculatedTotal = 0;
-                          (o.order_items || []).forEach(item => {
-                            const st = springTypes.find(s => s.id === item.spring_type_id);
-                            const springQty = item.quantity_completed > 0 ? item.quantity_completed : (item.quantity_ordered || 0);
-                            calculatedTotal += (st?.pay_rate || 0) * springQty;
-                            if (item.task_assignments) {
-                              item.task_assignments.forEach(ta => {
-                                const tt = taskTypes.find(t => t.id === ta.task_type_id);
-                                const workerSalary = ta.profiles?.salary || 0;
-                                const taskQty = ta.quantity_produced > 0 ? ta.quantity_produced : (ta.quantity_assigned || springQty);
-                                calculatedTotal += ((tt?.rate || 0) + workerSalary) * taskQty;
-                              });
-                            }
-                          });
+                          // Let amount default to 0 for now until client provides logic
+                          const calculatedTotal = 0;
                           
                           setVerifyInvoiceOrder({ order: o, totalAmount: calculatedTotal });
                         }}

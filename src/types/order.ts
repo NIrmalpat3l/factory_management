@@ -72,6 +72,7 @@ export interface TaskAssignment {
   id: string;
   order_item_id: string;
   worker_id: string | null;
+  manual_worker_name?: string | null;
   task_type_id: string | null;
   quantity_assigned: number;
   quantity_produced: number;
@@ -91,13 +92,33 @@ export interface TaskAssignment {
 export interface TaskType {
   id: string;
   name: string;
-  rate?: number;
   created_at?: string;
 }
 
 export interface SpringCategory {
   id: string;
   name: string;
+}
+
+export interface QCInspectionResult {
+  id: string;
+  inspection_id: string;
+  parameter_id: string;
+  expected_value?: number;
+  actual_value: number;
+  is_passed: boolean;
+  created_at?: string;
+}
+
+export interface QCInspection {
+  id: string;
+  order_id: string;
+  stage: 'in_progress' | 'after_completion';
+  status: 'passed' | 'failed' | 'pending';
+  inspector_id?: string;
+  notes?: string;
+  created_at?: string;
+  results?: QCInspectionResult[];
 }
 
 export interface SpringParameter {
@@ -111,7 +132,6 @@ export interface SpringType {
   id: string;
   category_id: string;
   name: string;
-  pay_rate: number;
   created_at?: string;
   // Joined
   category_name?: string;

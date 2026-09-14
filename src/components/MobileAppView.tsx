@@ -24,6 +24,7 @@ interface MobileAppViewProps {
   onEditOrder: (order: Order) => void;
   onDeleteOrder: (id: string) => void;
   onQuickStatusChange: (order: Order, newStatus: OrderStatus) => void;
+  onInspectOrder?: (order: Order) => void;
   onRefresh: () => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
@@ -40,6 +41,7 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
   onEditOrder,
   onDeleteOrder,
   onQuickStatusChange,
+  onInspectOrder,
   onRefresh,
   searchQuery,
   setSearchQuery,
@@ -74,7 +76,7 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
       filtered = filtered.filter(o => o.status === 'cancelled');
     } else if (activeTab === 'QA PORTAL') {
       filtered = filtered.filter(o => 
-        o.status === 'in_progress' || (o.status === 'completed' && o.qc_status !== 'passed')
+        o.status === 'in_progress' || o.status === 'completed' || o.qc_status === 'passed' || o.qc_status === 'failed'
       );
     }
 
@@ -218,7 +220,7 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
                     const menuOptions = getMenuOptions(order);
                     return (
                       <div key={order.id} className="order-item-card" style={{ position: 'relative' }}>
-                        <div className="order-main-info" onClick={isAdmin ? () => onEditOrder(order) : undefined} style={isAdmin ? { cursor: 'pointer' } : undefined}>
+                        <div className="order-main-info" onClick={(isAdmin || isWorker) ? () => onEditOrder(order) : undefined} style={(isAdmin || isWorker) ? { cursor: 'pointer' } : undefined}>
                           {!hideCompanyAndAssignedTo && <div className="company-name">{order.company_name}</div>}
                           <div className="order-desc">{order.spring_names || 'No items'}</div>
                           <div className="order-meta">
@@ -232,49 +234,17 @@ export const MobileAppView: React.FC<MobileAppViewProps> = ({
                           
                           <div style={{ marginTop: '12px' }}>
                             {(isAdmin || activeTab === 'QA PORTAL') ? (
-                              <div className="pill-selector-group" style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '6px' }} onClick={(e) => e.stopPropagation()}>
-                                {['pending', 'passed', 'failed'].map(status => {
-                                  const currentStatus = order.qc_status || 'pending';
-                                  const isSelected = currentStatus === status;
-                                  
-                                  let selectedBg = '#94a3b8';
-                                  if (status === 'passed') selectedBg = '#10b981';
-                                  if (status === 'failed') selectedBg = '#ef4444';
-
-                                  return (
-                                    <button
-                                      key={status}
-                                      className={`pill-btn ${isSelected ? 'selected' : ''}`}
-                                      style={{
-                                        padding: '6px 4px',
-                                        fontSize: '11px',
-                                        backgroundColor: isSelected ? selectedBg : '#ffffff',
-                                        color: isSelected ? '#ffffff' : '#64748b',
-                                        flex: 1
-                                      }}
-                                      onClick={async (e) => {
-                                        e.stopPropagation();
-                                        if (isSelected) return;
-                                        try {
-                                          await (await import('../services/api')).api.updateOrder(order.id, { ...order, qc_status: status });
-                                          onRefresh();
-                                        } catch (err: any) {
-                                          alert('Failed to update QC status: ' + err.message);
-                                        }
-                                      }}
-                                    >
-                                      {status.toUpperCase()}
-                                    </button>
-                                  );
-                                })}
-                              </div>
+                              <button
+                                className="btn-primary"
+                                style={{ width: '100%', padding: '8px', fontSize: '13px', justifyContent: 'center' }}
+                                onClick={(e) => { e.stopPropagation(); onInspectOrder?.(order); }}
+                              >
+                                Inspect
+                              </button>
                             ) : (
-                              <div>
-                                <span style={{ fontSize: '12px', color: '#64748b', marginRight: '6px' }}>QC:</span>
-                                <span className={`status-pill ${order.qc_status?.toUpperCase() || 'PENDING'}`}>
-                                  {order.qc_status?.toUpperCase() || 'PENDING'}
-                                </span>
-                              </div>
+                              <span className={`status-pill ${order.qc_status?.toUpperCase() || 'PENDING'}`} style={{ display: 'inline-block', marginTop: '4px' }}>
+                                QC: {order.qc_status?.toUpperCase() || 'PENDING'}
+                              </span>
                             )}
                           </div>
                         </div>

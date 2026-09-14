@@ -92,14 +92,13 @@ export const TaskConfigPanel: React.FC<TaskConfigPanelProps> = ({
           <thead>
             <tr>
               <th>Task Name</th>
-              <th>Rate ($)</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {taskTypes.length === 0 ? (
               <tr>
-                <td colSpan={3} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                <td colSpan={2} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
                   No task types configured yet.
                 </td>
               </tr>
@@ -107,31 +106,7 @@ export const TaskConfigPanel: React.FC<TaskConfigPanelProps> = ({
               taskTypes.map(t => (
                 <tr key={t.id}>
                   <td><strong>{t.name}</strong></td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ color: '#64748b' }}>$</span>
-                      <input
-                        type="number"
-                        defaultValue={t.rate || 0}
-                        style={{ width: '80px', padding: '4px', border: '1px solid #e2e8f0', borderRadius: '4px' }}
-                        onBlur={async (e) => {
-                          const val = parseFloat(e.target.value);
-                          if (!isNaN(val) && val !== t.rate) {
-                            try {
-                              setLoading(t.id);
-                              await api.updateTaskType(t.id, { rate: val });
-                              onRefresh();
-                            } catch(err: any) {
-                              alert('Failed to update task rate: ' + err.message);
-                            } finally {
-                              setLoading(null);
-                            }
-                          }
-                        }}
-                        disabled={loading === t.id}
-                      />
-                    </div>
-                  </td>
+
                   <td>
                     <button className="add-plus-btn" style={{ width: '32px', height: '32px', color: '#dc2626' }}
                       onClick={() => setDeleteConfirmId(t.id)} disabled={loading !== null} title="Delete">

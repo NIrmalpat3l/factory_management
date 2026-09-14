@@ -11,6 +11,7 @@ import { SpringConfigPanel } from '@/components/SpringConfigPanel';
 import { WorkerManagePanel } from '@/components/WorkerManagePanel';
 import { UserRolePanel } from '@/components/UserRolePanel';
 import { TaskConfigPanel } from '@/components/TaskConfigPanel';
+import { QCInspectionModal } from '@/components/QCInspectionModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { Factory, LogOut, Loader2, Trash2 } from 'lucide-react';
 
@@ -32,6 +33,10 @@ export default function Page() {
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
   const [newlyAddedCompany, setNewlyAddedCompany] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  
+  // QC Modal
+  const [isQCModalOpen, setIsQCModalOpen] = useState(false);
+  const [inspectingOrder, setInspectingOrder] = useState<Order | null>(null);
 
   // Data for admin panels
   const [workers, setWorkers] = useState<Profile[]>([]);
@@ -183,15 +188,8 @@ export default function Page() {
     if (activeTab === 'ACCOUNTING' && isAccountant) return true;
     if (activeTab === 'QA PORTAL' && isQA) return true;
     
-    // In common panels, if they are a worker, they only see their assigned orders
-    if (isWorker && user) {
-      return order.order_items?.some(item => 
-        item.task_assignments?.some(ta => ta.worker_id === user.id)
-      );
-    }
-    
-    // If they are not a worker, but have these roles, they can see everything in common panels
-    if (isAccountant || isViewer || isQA) return true;
+    // In common panels, workers (PH), accountants, viewers, and QA can see everything
+    if (isWorker || isAccountant || isViewer || isQA) return true;
     
     return false;
   });
@@ -248,6 +246,7 @@ export default function Page() {
           onEditOrder={handleEditOrder}
           onDeleteOrder={handleDeleteOrder}
           onQuickStatusChange={handleQuickStatusChange}
+          onInspectOrder={(order) => { setInspectingOrder(order); setIsQCModalOpen(true); }}
           onRefresh={fetchData}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -268,6 +267,7 @@ export default function Page() {
           onEditOrder={handleEditOrder}
           onDeleteOrder={handleDeleteOrder}
           onQuickStatusChange={handleQuickStatusChange}
+          onInspectOrder={(order) => { setInspectingOrder(order); setIsQCModalOpen(true); }}
           onRefresh={fetchData}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -319,6 +319,23 @@ export default function Page() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* QC Inspection Modal */}
+      {isQCModalOpen && inspectingOrder && user && (
+        <QCInspectionModal
+          order={inspectingOrder}
+          currentUserId={user.id}
+          onClose={() => {
+            setIsQCModalOpen(false);
+            setInspectingOrder(null);
+          }}
+          onSave={() => {
+            setIsQCModalOpen(false);
+            setInspectingOrder(null);
+            fetchData();
+          }}
+        />
       )}
     </div>
   );

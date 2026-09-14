@@ -41,7 +41,7 @@ export const OrderFormModal: React.FC<OrderFormModalProps> = ({
   const [loading, setLoading] = useState(false);
 
   // Worker task assignment
-  const [tasks, setTasks] = useState<{task_type_id: string, worker_id: string}[]>([]);
+  const [tasks, setTasks] = useState<{task_type_id: string, worker_id: string, manual_worker_name: string, quantity_assigned: number}[]>([]);
 
   // Dynamic parameter values (filled by user when ordering)
   const [paramValues, setParamValues] = useState<Record<string, number>>({});
@@ -63,7 +63,9 @@ export const OrderFormModal: React.FC<OrderFormModalProps> = ({
       
       const initialTasks = firstItem?.task_assignments?.map(ta => ({
         task_type_id: ta.task_type_id || '',
-        worker_id: ta.worker_id || ''
+        worker_id: ta.worker_id || '',
+        manual_worker_name: ta.manual_worker_name || '',
+        quantity_assigned: ta.quantity_assigned || initialData.total_qty_ordered || 1
       })) || [];
       setTasks(initialTasks);
 
@@ -135,6 +137,7 @@ export const OrderFormModal: React.FC<OrderFormModalProps> = ({
         },
         _tasks: tasks,
         _dimensions: paramValues,
+        _skip_order_update: userRole === 'worker'
       });
       onClose();
     } catch (err: any) {
@@ -168,7 +171,7 @@ export const OrderFormModal: React.FC<OrderFormModalProps> = ({
             <div className="form-field">
               <label>ORDER NO <span className="required">*</span></label>
               <input type="text" className="form-input" value={orderNo}
-                onChange={(e) => setOrderNo(e.target.value)} required />
+                onChange={(e) => setOrderNo(e.target.value)} required disabled={userRole === 'worker'} />
             </div>
 
             {/* COMPANY NAME */}
@@ -176,7 +179,7 @@ export const OrderFormModal: React.FC<OrderFormModalProps> = ({
               <label>COMPANY <span className="required">*</span></label>
               <div className="form-input-wrapper">
                 <select className="form-input" value={companyId}
-                  onChange={(e) => setCompanyId(e.target.value)} required>
+                  onChange={(e) => setCompanyId(e.target.value)} required disabled={userRole === 'worker'}>
                   <option value="">Select Company</option>
                   {companies.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
@@ -197,6 +200,7 @@ export const OrderFormModal: React.FC<OrderFormModalProps> = ({
                 {allowedStatuses.map((st) => (
                   <button key={st} type="button"
                     className={`pill-btn ${status === st ? 'selected' : ''}`}
+                    disabled={userRole === 'worker'}
                     onClick={() => setStatus(st)}>
                     {st.toUpperCase().replace('_', ' ')}
                   </button>
@@ -213,11 +217,11 @@ export const OrderFormModal: React.FC<OrderFormModalProps> = ({
                 <div className="form-field" style={{ marginBottom: '12px' }}>
                   <label>SPRING TYPE <span className="required">*</span></label>
                   <select className="form-input" value={springTypeId}
-                    onChange={e => setSpringTypeId(e.target.value)}>
+                    onChange={e => setSpringTypeId(e.target.value)} disabled={userRole === 'worker'}>
                     <option value="">-- Select Spring Type --</option>
                     {springTypes.map(st => (
                       <option key={st.id} value={st.id}>
-                        {st.name} ({st.category_name || 'No Category'}) — ₹{st.pay_rate}/unit
+                        {st.name} ({st.category_name || 'No Category'})
                       </option>
                     ))}
                   </select>
@@ -241,6 +245,7 @@ export const OrderFormModal: React.FC<OrderFormModalProps> = ({
                             onChange={e => setParamValues(prev => ({
                               ...prev, [p.parameter_id]: parseFloat(e.target.value) || 0
                             }))}
+                            disabled={userRole === 'worker'}
                             placeholder="0.00" />
                         </div>
                       ))}
@@ -254,19 +259,19 @@ export const OrderFormModal: React.FC<OrderFormModalProps> = ({
                   <div className="stepper-container">
                     <button type="button" className="stepper-btn" onClick={() => setQty(Math.max(1, qty - 1))}>-</button>
                     <input type="number" className="stepper-input" value={qty}
-                      onChange={(e) => setQty(Math.max(1, parseInt(e.target.value) || 1))} />
+                      onChange={(e) => setQty(Math.max(1, parseInt(e.target.value) || 1))} disabled={userRole === 'worker'} />
                     <button type="button" className="stepper-btn" onClick={() => setQty(qty + 1)}>+</button>
                   </div>
               </div>
             </div>
 
-            {/* WORKER ASSIGNMENT (admin only) */}
-            {userRole === 'admin' && (
+            {/* WORKER ASSIGNMENT */}
+            {(userRole === 'admin' || userRole === 'worker') && (
               <div className="form-field">
                 <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span>TASKS & WORKERS</span>
                   <button type="button" className="btn-primary" style={{ padding: '4px 8px', fontSize: '12px' }}
-                    onClick={() => setTasks([...tasks, { task_type_id: '', worker_id: '' }])}>
+                    onClick={() => setTasks([...tasks, { task_type_id: '', worker_id: '', manual_worker_name: '', quantity_assigned: qty }])}>
                     <Plus size={14} /> Add Task
                   </button>
                 </label>
@@ -289,17 +294,30 @@ export const OrderFormModal: React.FC<OrderFormModalProps> = ({
                           <option value="">-- Task Type --</option>
                           {taskTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                         </select>
-                        <select className="form-input" style={{ flex: 1, padding: '4px 8px', fontSize: '13px' }}
-                          value={task.worker_id}
-                          onChange={e => {
-                            const newTasks = [...tasks];
-                            newTasks[idx].worker_id = e.target.value;
-                            setTasks(newTasks);
-                          }}>
-                          <option value="">-- Unassigned --</option>
-                          {workers.map(w => <option key={w.id} value={w.id}>{w.full_name}</option>)}
-                        </select>
-                        <button type="button" className="add-plus-btn" style={{ color: '#dc2626', width: '28px', height: '28px' }}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <select className="form-input" style={{ padding: '4px 8px', fontSize: '13px' }}
+                            value={task.worker_id}
+                            onChange={e => {
+                              const newTasks = [...tasks];
+                              newTasks[idx].worker_id = e.target.value;
+                              setTasks(newTasks);
+                            }}>
+                            <option value="">-- Unassigned --</option>
+                            {workers.map(w => <option key={w.id} value={w.id}>{w.full_name}</option>)}
+                          </select>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <label style={{ fontSize: '11px', color: '#64748b' }}>Qty:</label>
+                          <input type="number" className="form-input" style={{ width: '60px', padding: '4px', fontSize: '13px' }}
+                            value={task.quantity_assigned}
+                            onChange={e => {
+                              const newTasks = [...tasks];
+                              newTasks[idx].quantity_assigned = parseInt(e.target.value) || 0;
+                              setTasks(newTasks);
+                            }}
+                          />
+                        </div>
+                        <button type="button" className="add-plus-btn" style={{ width: '28px', height: '28px', color: '#dc2626' }}
                           onClick={() => {
                             const newTasks = [...tasks];
                             newTasks.splice(idx, 1);

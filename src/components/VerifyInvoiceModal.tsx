@@ -24,14 +24,12 @@ export const VerifyInvoiceModal: React.FC<VerifyInvoiceModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  // Calculate detailed lines
   const lines = (order.order_items || []).map(item => {
     const springType = springTypes.find(st => st.id === item.spring_type_id);
-    const springRate = springType?.pay_rate || 0;
     const qty = item.quantity_completed > 0 ? item.quantity_completed : (item.quantity_ordered || 0);
     
     // Group tasks by task_type_id
-    const taskBreakdown: { name: string; rate: number; qty: number; total: number }[] = [];
+    const taskBreakdown: { name: string; qty: number; total: number }[] = [];
     let totalTaskCost = 0;
 
     if (item.task_assignments) {
@@ -39,40 +37,38 @@ export const VerifyInvoiceModal: React.FC<VerifyInvoiceModalProps> = ({
         if (!ta.task_type_id) return acc;
         
         // Use a unique key for grouping by task and worker
-        const key = `${ta.task_type_id}_${ta.worker_id || 'unassigned'}`;
+        const key = `${ta.task_type_id}_${ta.worker_id || ta.manual_worker_name || 'unassigned'}`;
         
         if (!acc[key]) {
           const tt = taskTypes.find(t => t.id === ta.task_type_id);
-          const workerName = ta.profiles?.full_name || ta.worker_name || 'Unassigned';
+          const workerName = ta.profiles?.full_name || ta.manual_worker_name || ta.worker_name || 'Unassigned';
           const workerRate = ta.profiles?.salary || 0;
-          acc[key] = { name: tt?.name || 'Unknown', workerName, taskRate: tt?.rate || 0, workerRate, qty: 0 };
+          acc[key] = { name: tt?.name || 'Unknown', workerName, workerRate, qty: 0 };
         }
         // Fallback to assigned or ordered quantity if produced is 0 for testing purposes
         const taskQty = ta.quantity_produced > 0 ? ta.quantity_produced : (ta.quantity_assigned || qty);
         acc[key].qty += taskQty;
         return acc;
-      }, {} as Record<string, { name: string; workerName: string; taskRate: number; workerRate: number; qty: number }>);
+      }, {} as Record<string, { name: string; workerName: string; workerRate: number; qty: number }>);
 
       for (const key in groupedTasks) {
         const t = groupedTasks[key];
         
         // Task entry
-        const taskCost = t.taskRate * t.qty;
-        taskBreakdown.push({ name: `Task: ${t.name}`, rate: t.taskRate, qty: t.qty, total: taskCost });
+        taskBreakdown.push({ name: `Task: ${t.name}`, qty: t.qty, total: 0 });
         
         // Worker entry
         const workerCost = t.workerRate * t.qty;
-        taskBreakdown.push({ name: `Labour: ${t.workerName}`, rate: t.workerRate, qty: t.qty, total: workerCost });
+        taskBreakdown.push({ name: `Labour: ${t.workerName}`, qty: t.qty, total: workerCost });
         
-        totalTaskCost += (taskCost + workerCost);
+        totalTaskCost += workerCost;
       }
     }
 
-    const springTotal = springRate * qty;
+    const springTotal = 0;
 
     return {
       springName: item.spring_types?.name || springType?.name || 'Unknown Spring',
-      springRate,
       qty,
       springTotal,
       taskBreakdown,
@@ -139,7 +135,6 @@ export const VerifyInvoiceModal: React.FC<VerifyInvoiceModalProps> = ({
               <tr style={{ background: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
                 <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Item / Task Details</th>
                 <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Qty</th>
-                <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Rate</th>
                 <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Total</th>
               </tr>
             </thead>
@@ -149,7 +144,6 @@ export const VerifyInvoiceModal: React.FC<VerifyInvoiceModalProps> = ({
                   <tr style={{ borderBottom: line.taskBreakdown.length > 0 ? 'none' : '1px solid #e2e8f0' }}>
                     <td style={{ padding: '16px 12px', fontWeight: 600 }}>{line.springName}</td>
                     <td style={{ padding: '16px 12px', textAlign: 'right' }}>{line.qty.toLocaleString()}</td>
-                    <td style={{ padding: '16px 12px', textAlign: 'right', color: '#64748b' }}>${line.springRate.toFixed(2)}</td>
                     <td style={{ padding: '16px 12px', textAlign: 'right', fontWeight: 600 }}>${line.springTotal.toFixed(2)}</td>
                   </tr>
                   {line.taskBreakdown.map((t, tIdx) => (
@@ -158,7 +152,6 @@ export const VerifyInvoiceModal: React.FC<VerifyInvoiceModalProps> = ({
                         ↳ <span style={{ fontWeight: 600 }}>{t.name}</span>
                       </td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b', fontSize: '13px' }}>{t.qty.toLocaleString()}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#94a3b8', fontSize: '13px' }}>${t.rate.toFixed(2)}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b', fontSize: '13px' }}>${t.total.toFixed(2)}</td>
                     </tr>
                   ))}
